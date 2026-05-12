@@ -1,0 +1,17 @@
+# Buah Batu Traffic Dataset — YOLOv8 Format
+# 903 images, 880x880, 8 classes
+
+path: d:/Semester 6/Capstone
+train: train/images
+val: valid/images
+test: test/images
+
+nc: 8
+names: ['Bis mini', 'Manusia', 'Mobil', 'Motor', 'Truk berat', 'Truk menengah', 'Truk ringan', 'bus']
+
+roboflow:
+  workspace: agungs-workspace-gqb74
+  project: lalu-lintas-buah-batu-bandung
+  version: 6
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/agungs-workspace-gqb74/lalu-lintas-buah-batu-bandung/dataset/6
