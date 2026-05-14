@@ -132,6 +132,23 @@ class BaseCCTVPreprocessor(ABC):
         """(threshold, strength) untuk meredam silau lampu malam. strength 0 = off."""
         return (220, 0.0)
 
+    # Masking Teks
+    @property
+    def mask_color_thresholds(self):
+        """Batas threshold untuk warna teks (putih_min, hitam_max)."""
+        return {"putih_min": 180, "hitam_max": 50}
+
+    @property
+    def mask_colors_hsv(self):
+        """Daftar rentang warna HSV (lower, upper) untuk teks berwarna (Cyan, Kuning, Hijau, Merah)."""
+        return [
+            (np.array([80, 100, 100]), np.array([100, 255, 255])),   # Cyan
+            (np.array([20, 100, 100]), np.array([40, 255, 255])),    # Kuning
+            (np.array([40, 100, 100]), np.array([80, 255, 255])),    # Hijau
+            (np.array([0, 100, 100]), np.array([10, 255, 255])),     # Merah 1
+            (np.array([160, 100, 100]), np.array([180, 255, 255])),  # Merah 2
+        ]
+
     # Resize
     @property
     def target_size(self):
@@ -145,38 +162,35 @@ class BaseCCTVPreprocessor(ABC):
 
     #  TAHAP 1: Masking Teks Overlay (Timestamp, Fase, dsb
     def masking_teks(self, image: np.ndarray) -> np.ndarray:
-        """
-        Menghilangkan teks overlay CCTV (Putih, Cyan, dan Hitam) 
-        menggunakan teknik Multi-Color Thresholding & Inpainting.
-        """
         result = image.copy()
         all_regions = self.mask_regions_atas + self.mask_regions_bawah
         
         # Buat kanvas masker kosong
         mask = np.zeros(image.shape[:2], dtype=np.uint8)
         
-        # Konversi ke HSV untuk deteksi warna Cyan yang akurat
+        # Konversi ke HSV untuk deteksi warna yang akurat
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        
+        thresh = self.mask_color_thresholds
+        hsv_colors = self.mask_colors_hsv
 
         for (x1, y1, x2, y2) in all_regions:
             # Isolasi area teks agar tidak mengganggu piksel jalan raya di luar kotak
             reg_gray = cv2.cvtColor(image[y1:y2, x1:x2], cv2.COLOR_BGR2GRAY)
             reg_hsv = hsv[y1:y2, x1:x2]
             
-            # 1. Masker untuk Teks Putih/Terang (Timestamp & DISHUB)
-            _, mask_putih = cv2.threshold(reg_gray, 200, 255, cv2.THRESH_BINARY)
+            # 1. Masker untuk Teks Putih/Terang
+            _, mask_putih = cv2.threshold(reg_gray, thresh["putih_min"], 255, cv2.THRESH_BINARY)
             
-            # 2. Masker untuk Teks Hitam (Tulisan "VID BUAH BATU", dll)
-            _, mask_hitam = cv2.threshold(reg_gray, 50, 255, cv2.THRESH_BINARY_INV)
+            # 2. Masker untuk Teks Hitam
+            _, mask_hitam = cv2.threshold(reg_gray, thresh["hitam_max"], 255, cv2.THRESH_BINARY_INV)
             
-            # 3. Masker untuk Teks Cyan (Fase: GERAK, Skor)
-            lower_cyan = np.array([80, 100, 100])
-            upper_cyan = np.array([100, 255, 255])
-            mask_cyan = cv2.inRange(reg_hsv, lower_cyan, upper_cyan)
-            
-            # Gabungkan ketiga masker warna tersebut (Logika OR)
             mask_gabungan = cv2.bitwise_or(mask_putih, mask_hitam)
-            mask_gabungan = cv2.bitwise_or(mask_gabungan, mask_cyan)
+            
+            # 3. Masker untuk warna-warna HSV (Cyan, Kuning, Merah, Hijau)
+            for (lower, upper) in hsv_colors:
+                mask_warna = cv2.inRange(reg_hsv, lower, upper)
+                mask_gabungan = cv2.bitwise_or(mask_gabungan, mask_warna)
             
             # Lakukan dilasi (penebalan) tipis agar pinggiran huruf ikut terhapus bersih
             kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
@@ -186,7 +200,6 @@ class BaseCCTVPreprocessor(ABC):
             mask[y1:y2, x1:x2] = mask_gabungan
 
         # Inpaint: Mengisi bekas teks dengan piksel tiruan dari aspal/latar sekitarnya
-        # Menggunakan radius kecil (3) agar hasil tambalan tidak terlihat blur/meleleh
         result = cv2.inpaint(result, mask, self.inpaint_radius, cv2.INPAINT_TELEA)
         return result
 
@@ -209,11 +222,6 @@ class BaseCCTVPreprocessor(ABC):
 
     #  TAHAP 3: Penyesuaian Kontras (CLAHE)
     def sesuaikan_kontras(self, image: np.ndarray, waktu: str) -> np.ndarray:
-        """
-        Menyesuaikan kontras menggunakan CLAHE pada channel L (LAB).
-        - Pagi: tingkatkan kontras (clip_limit tinggi)
-        - Malam: turunkan kontras (mengurangi glare lampu kendaraan)
-        """
         params = {
             "pagi": self.kontras_pagi,
             "malam": self.kontras_malam,
@@ -253,11 +261,6 @@ class BaseCCTVPreprocessor(ABC):
 
     #  TAHAP 5: Resize ke Ukuran Seragam (Letterbox)
     def resize_gambar(self, image: np.ndarray) -> np.ndarray:
-        """
-        Resize gambar ke ukuran target dengan letterboxing.
-        Letterbox = pertahankan aspek rasio + padding abu-abu.
-        Ini standar YOLO agar objek tidak terdistorsi.
-        """
         target_w, target_h = self.target_size
         h, w = image.shape[:2]
 
@@ -300,7 +303,6 @@ class BaseCCTVPreprocessor(ABC):
     
     #  PIPELINE LENGKAP
     def preprocess(self, image: np.ndarray, waktu: str) -> np.ndarray:
-        """Jalankan seluruh tahapan preprocessing pada satu gambar."""
         result = self.masking_teks(image)
         if waktu == "malam":
             result = self.suppress_highlights(result)
@@ -312,23 +314,16 @@ class BaseCCTVPreprocessor(ABC):
 
     #  PROSES BATCH — Proses semua gambar di folder
     def proses_semua(self, waktu_filter: str = None):
-        """
-        Proses semua gambar untuk lokasi ini.
-        Hasil disimpan di: dataset_preprocessing/<folder_output>/<waktu>/
-
-        Args:
-            waktu_filter: Jika diisi, hanya proses waktu tersebut
-        """
         data_path = self.DATA_ROOT / self.folder_data
         if not data_path.exists():
-            print(f"  ⚠  Folder data tidak ditemukan: {data_path}")
-            print(f"      Data untuk {self.nama} belum tersedia. Dilewati.")
+            print(f" Folder data tidak ditemukan: {data_path}")
+            print(f"Data untuk {self.nama} belum tersedia. Dilewati.")
             self.stats["skipped"] += 1
             return
 
         print(f"\n{'='*55}")
-        print(f"  📍 {self.nama}")
-        print(f"  📂 Input : {data_path}")
+        print(f" {self.nama}")
+        print(f" Input : {data_path}")
         print(f"{'='*55}")
 
         waktu_list = [waktu_filter] if waktu_filter else self.waktu_tersedia
@@ -336,7 +331,7 @@ class BaseCCTVPreprocessor(ABC):
         for waktu in waktu_list:
             input_dir = data_path / waktu
             if not input_dir.exists():
-                print(f"  ⚠  Subfolder '{waktu}' tidak ada. Dilewati.")
+                print(f"Subfolder '{waktu}' tidak ada. Dilewati.")
                 continue
 
             # Kumpulkan file gambar
@@ -347,22 +342,22 @@ class BaseCCTVPreprocessor(ABC):
             ])[:4]
 
             if not files:
-                print(f"  ⚠  Tidak ada gambar di {input_dir}.")
+                print(f"Tidak ada gambar di {input_dir}.")
                 continue
 
             # Buat folder output
             output_dir = self.OUTPUT_ROOT / self.folder_output / waktu
             output_dir.mkdir(parents=True, exist_ok=True)
 
-            print(f"\n  🕐 {waktu.upper()} — {len(files)} gambar")
-            print(f"     Output: {output_dir}")
+            print(f"\n{waktu.upper()} — {len(files)} gambar")
+            print(f"Output: {output_dir}")
 
             start = time.time()
             for idx, filepath in enumerate(files):
                 try:
                     img = cv2.imread(str(filepath))
                     if img is None:
-                        print(f"     ❌ Gagal baca: {filepath.name}")
+                        print(f"Gagal baca: {filepath.name}")
                         self.stats["errors"] += 1
                         continue
 
@@ -376,14 +371,14 @@ class BaseCCTVPreprocessor(ABC):
                     # Log progress setiap 100 gambar
                     if (idx + 1) % 100 == 0 or (idx + 1) == len(files):
                         pct = ((idx + 1) / len(files)) * 100
-                        print(f"     ✅ {idx+1}/{len(files)} ({pct:.0f}%)")
+                        print(f"{idx+1}/{len(files)} ({pct:.0f}%)")
 
                 except Exception as e:
-                    print(f"     ❌ Error {filepath.name}: {e}")
+                    print(f"Error {filepath.name}: {e}")
                     self.stats["errors"] += 1
 
             elapsed = time.time() - start
-            print(f"     ⏱  Selesai dalam {elapsed:.1f} detik")
+            print(f"Selesai dalam {elapsed:.1f} detik")
 
 
 #  CLASS PER-LOKASI CCTV
@@ -412,8 +407,8 @@ class BubatBarat(BaseCCTVPreprocessor):
     # Parameter spesifik Bubat Barat
     @property
     def mask_regions_atas(self):
-        return [(0, 0, 310, 65),
-                (335,35,520,60)]
+        return [(0, 0, 350, 80),
+                (320,20,640,80)]
 
     @property
     def mask_regions_bawah(self):
@@ -451,7 +446,7 @@ class BubatBarat(BaseCCTVPreprocessor):
     @property
     def denoise_strength(self):
         """Strength denoising untuk malam hari."""
-        return 5  # Dikembalikan ke 5 agar tidak terlalu blur
+        return 6 
 
     @property
     def bilateral_filter_params(self):
@@ -583,11 +578,6 @@ def main():
         help="Waktu spesifik (default: semua waktu yang tersedia)",
     )
     args = parser.parse_args()
-
-    print("╔═══════════════════════════════════════════════════════╗")
-    print("║   PREPROCESSING DATASET CCTV BUAH BATU BANDUNG      ║")
-    print("╚═══════════════════════════════════════════════════════╝")
-
     # Tentukan lokasi yang akan diproses
     if args.lokasi:
         lokasi_proses = {args.lokasi: LOKASI_CCTV[args.lokasi]}
