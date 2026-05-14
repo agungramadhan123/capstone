@@ -1,4 +1,8 @@
 """
+Baca terlebih dahulu 
+"""
+
+"""
 Tahapan preprocessing:
     1. Masking teks overlay (timestamp, Fase, Skor, DISHUB, nama lokasi)
     2. Penyesuaian kecerahan (pagi: turunkan, malam: naikkan)
@@ -11,6 +15,10 @@ Cara menjalankan:
     python preprocessing.py --lokasi bubat_barat         # lokasi spesifik
     python preprocessing.py --lokasi bubat_barat --waktu malam  # waktu spesifik
     python preprocessing.py --lokasi .....               # Sesuaikan dengan titik masing2
+"""
+
+"""
+perhatikan path datanya dan sesuaikan pada lokasi penyimpanan kalian
 """
 
 import cv2
@@ -597,14 +605,12 @@ def main():
     elapsed = time.time() - start_all
 
     # Ringkasan
-    print(f"\n{'='*55}")
     print(f" RINGKASAN")
-    print(f"{'='*55}")
     print(f"  Total gambar diproses : {total_processed}")
     print(f"  Total error           : {total_errors}")
     print(f"  Waktu total           : {elapsed:.1f} detik")
     print(f"  Output                : dataset_preprocessing/")
-    print(f"\n  ✨ Selesai! Hasil siap untuk tahapan pemodelan.")
+    print(f"\nSelesai! Hasil siap untuk tahapan pemodelan.")
 
 
 if __name__ == "__main__":
