@@ -1,0 +1,16 @@
+# ByteTrack Configuration for Buah Batu Traffic Monitoring
+# Tuned for dense motorcycle scenes with frequent occlusion
+
+tracker_type: bytetrack
+
+# Detection thresholds for two-stage association
+track_high_thresh: 0.5      # First pass: high-confidence detections
+track_low_thresh: 0.1       # Second pass: catches occluded objects
+new_track_thresh: 0.6       # Min confidence to create new track
+
+# Track lifecycle
+track_buffer: 30            # Frames to keep lost track (1 sec at 30fps)
+match_thresh: 0.8           # IoU threshold for matching
+
+# Score fusion
+fuse_score: true            # Fuse detection score with track score

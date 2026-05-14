@@ -1,0 +1,28 @@
+[2026-05-01 10:43:43] INFO | evaluate | ============================================================
+[2026-05-01 10:43:43] INFO | evaluate | MODEL EVALUATION — Buah Batu Fine-Tuned
+[2026-05-01 10:43:43] INFO | evaluate | ============================================================
+[2026-05-01 10:43:43] INFO | evaluate | Using model: d:\Semester 6\Capstone\runs\buahbatu_v1\weights\best.pt
+[2026-05-01 10:43:43] INFO | evaluate | 
+📌 1/3 Validation Metrics
+[2026-05-01 10:43:45] INFO | evaluate | 📊 Running validation on test set...
+[2026-05-01 10:44:03] INFO | evaluate | 
+==================================================
+[2026-05-01 10:44:03] INFO | evaluate |   mAP@50:      0.4291
+[2026-05-01 10:44:03] INFO | evaluate |   mAP@50-95:   0.3430
+[2026-05-01 10:44:03] INFO | evaluate |   Precision:   0.6226
+[2026-05-01 10:44:03] INFO | evaluate |   Recall:      0.4704
+[2026-05-01 10:44:03] INFO | evaluate | 
+  Per-class mAP@50:
+[2026-05-01 10:44:03] INFO | evaluate |     ⚠️ Bis mini          : 0.4205
+[2026-05-01 10:44:03] INFO | evaluate |     ⚠️ Manusia           : 0.0000
+[2026-05-01 10:44:03] INFO | evaluate |     ✅ Mobil             : 0.7180
+[2026-05-01 10:44:03] INFO | evaluate |     ⚠️ Motor             : 0.4670
+[2026-05-01 10:44:03] INFO | evaluate |     ✅ Truk berat        : 0.5101
+[2026-05-01 10:44:03] INFO | evaluate |     ⚠️ Truk menengah     : 0.1903
+[2026-05-01 10:44:03] INFO | evaluate |     ⚠️ Truk ringan       : 0.4383
+[2026-05-01 10:44:03] INFO | evaluate |     ⚠️ bus               : 0.0000
+[2026-05-01 10:44:03] INFO | evaluate | 
+📌 2/3 False Positive Analysis
+[2026-05-01 10:44:03] INFO | evaluate | 
+🔍 Analisis False Positive (Motor Berdekatan)
+[2026-05-01 10:44:03] INFO | evaluate | --------------------------------------------------

@@ -12,7 +12,7 @@ dataset = sv.DetectionDataset.from_yolo(
 folder_simpan = "Hasil_labelling"
 os.makedirs(folder_simpan, exist_ok=True)
 
-# 2. Siapkan DUA annotator: Satu untuk kotak, satu untuk teks
+# 2. Siapkan D`UA annotator: Satu untuk kotak, satu untuk teks
 box_annotator = sv.BoxAnnotator()
 label_annotator = sv.LabelAnnotator()
 

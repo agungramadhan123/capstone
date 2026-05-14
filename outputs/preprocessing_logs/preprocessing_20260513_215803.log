@@ -1,0 +1,49 @@
+2026-05-13 21:58:03,773 | INFO    | ╔══════════════════════════════════════════════════════════╗
+2026-05-13 21:58:03,774 | INFO    | ║     PREPROCESSING PIPELINE — CCTV BUAH BATU BANDUNG    ║
+2026-05-13 21:58:03,774 | INFO    | ╚══════════════════════════════════════════════════════════╝
+2026-05-13 21:58:03,774 | INFO    | Data source : D:\Semester 6\Capstone\Data
+2026-05-13 21:58:03,774 | INFO    | Output      : D:\Semester 6\Capstone\Data_Preprocessed
+2026-05-13 21:58:03,774 | INFO    | Mode        : Preview
+2026-05-13 21:58:03,774 | INFO    | 
+2026-05-13 21:58:03,774 | INFO    | ============================================================
+2026-05-13 21:58:03,774 | INFO    | 📍 Memproses: Bubat Barat (bubat_barat)
+2026-05-13 21:58:03,774 | INFO    |    Folder: D:\Semester 6\Capstone\Data\bubat barat
+2026-05-13 21:58:03,774 | INFO    | ============================================================
+2026-05-13 21:58:03,776 | INFO    | 
+   🕐 Waktu: PAGI — 558 gambar
+2026-05-13 21:58:03,776 | INFO    |    📋 Mode preview: 3 gambar sampel
+2026-05-13 21:58:04,008 | INFO    |    🔍 Preview saved: preview_pagi_00_BubatBrt_20260512_225046.jpg
+2026-05-13 21:58:04,097 | INFO    |    🔍 Preview saved: preview_pagi_01_BubatBrt_20260513_020901.jpg
+2026-05-13 21:58:04,208 | INFO    |    🔍 Preview saved: preview_pagi_02_BubatBrt_20260513_055037.jpg
+2026-05-13 21:58:04,209 | INFO    |    ✅ PAGI selesai: 3 diproses, 0 error
+2026-05-13 21:58:04,211 | INFO    | 
+   🕐 Waktu: MALAM — 652 gambar
+2026-05-13 21:58:04,211 | INFO    |    📋 Mode preview: 3 gambar sampel
+2026-05-13 21:58:04,290 | ERROR   |    ❌ Error pada BubatBrt_20260512_154625.jpg: OpenCV(4.8.1) :-1: error: (-5:Bad argument) in function 'fastNlMeansDenoisingColored'
+> Overload resolution failed:
+>  - 'hForColoredImage' is an invalid keyword argument for fastNlMeansDenoisingColored()
+>  - 'hForColoredImage' is an invalid keyword argument for fastNlMeansDenoisingColored()
+
+2026-05-13 21:58:04,363 | ERROR   |    ❌ Error pada BubatBrt_20260512_191549.jpg: OpenCV(4.8.1) :-1: error: (-5:Bad argument) in function 'fastNlMeansDenoisingColored'
+> Overload resolution failed:
+>  - 'hForColoredImage' is an invalid keyword argument for fastNlMeansDenoisingColored()
+>  - 'hForColoredImage' is an invalid keyword argument for fastNlMeansDenoisingColored()
+
+2026-05-13 21:58:04,426 | ERROR   |    ❌ Error pada BubatBrt_20260512_225007.jpg: OpenCV(4.8.1) :-1: error: (-5:Bad argument) in function 'fastNlMeansDenoisingColored'
+> Overload resolution failed:
+>  - 'hForColoredImage' is an invalid keyword argument for fastNlMeansDenoisingColored()
+>  - 'hForColoredImage' is an invalid keyword argument for fastNlMeansDenoisingColored()
+
+2026-05-13 21:58:04,426 | INFO    |    ✅ MALAM selesai: 0 diproses, 3 error
+2026-05-13 21:58:04,427 | INFO    | 
+============================================================
+2026-05-13 21:58:04,427 | INFO    | 📊 RINGKASAN PREPROCESSING
+2026-05-13 21:58:04,427 | INFO    | ============================================================
+2026-05-13 21:58:04,427 | INFO    |    ✅ bubat_barat: 3 gambar diproses, 3 error (0.7s)
+2026-05-13 21:58:04,427 | INFO    | 
+   TOTAL: 3/1210 gambar diproses, 3 error
+2026-05-13 21:58:04,427 | INFO    |    Waktu total: 0.7 detik
+2026-05-13 21:58:04,427 | INFO    | 
+   🔍 Preview disimpan di: D:\Semester 6\Capstone\Data_Preprocessed\_preview
+2026-05-13 21:58:04,427 | INFO    | 
+✨ Preprocessing selesai!

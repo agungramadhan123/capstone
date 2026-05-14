@@ -1,0 +1,37 @@
+2026-05-13 22:00:58,735 | INFO    | ╔══════════════════════════════════════════════════════════╗
+2026-05-13 22:00:58,735 | INFO    | ║     PREPROCESSING PIPELINE — CCTV BUAH BATU BANDUNG    ║
+2026-05-13 22:00:58,735 | INFO    | ╚══════════════════════════════════════════════════════════╝
+2026-05-13 22:00:58,735 | INFO    | Data source : D:\Semester 6\Capstone\Data
+2026-05-13 22:00:58,735 | INFO    | Output      : D:\Semester 6\Capstone\Data_Preprocessed
+2026-05-13 22:00:58,735 | INFO    | Mode        : Preview
+2026-05-13 22:00:58,736 | INFO    | 
+2026-05-13 22:00:58,736 | INFO    | ============================================================
+2026-05-13 22:00:58,736 | INFO    | 📍 Memproses: Bubat Barat (bubat_barat)
+2026-05-13 22:00:58,736 | INFO    |    Folder: D:\Semester 6\Capstone\Data\bubat barat
+2026-05-13 22:00:58,736 | INFO    | ============================================================
+2026-05-13 22:00:58,738 | INFO    | 
+   🕐 Waktu: PAGI — 558 gambar
+2026-05-13 22:00:58,738 | INFO    |    📋 Mode preview: 3 gambar sampel
+2026-05-13 22:00:58,918 | INFO    |    🔍 Preview saved: preview_pagi_00_BubatBrt_20260512_225046.jpg
+2026-05-13 22:00:59,063 | INFO    |    🔍 Preview saved: preview_pagi_01_BubatBrt_20260513_020901.jpg
+2026-05-13 22:00:59,229 | INFO    |    🔍 Preview saved: preview_pagi_02_BubatBrt_20260513_055037.jpg
+2026-05-13 22:00:59,229 | INFO    |    ✅ PAGI selesai: 3 diproses, 0 error
+2026-05-13 22:00:59,232 | INFO    | 
+   🕐 Waktu: MALAM — 652 gambar
+2026-05-13 22:00:59,232 | INFO    |    📋 Mode preview: 3 gambar sampel
+2026-05-13 22:01:00,207 | INFO    |    🔍 Preview saved: preview_malam_00_BubatBrt_20260512_154625.jpg
+2026-05-13 22:01:01,176 | INFO    |    🔍 Preview saved: preview_malam_01_BubatBrt_20260512_191549.jpg
+2026-05-13 22:01:02,123 | INFO    |    🔍 Preview saved: preview_malam_02_BubatBrt_20260512_225007.jpg
+2026-05-13 22:01:02,123 | INFO    |    ✅ MALAM selesai: 3 diproses, 0 error
+2026-05-13 22:01:02,123 | INFO    | 
+============================================================
+2026-05-13 22:01:02,123 | INFO    | 📊 RINGKASAN PREPROCESSING
+2026-05-13 22:01:02,123 | INFO    | ============================================================
+2026-05-13 22:01:02,123 | INFO    |    ✅ bubat_barat: 6 gambar diproses, 0 error (3.4s)
+2026-05-13 22:01:02,123 | INFO    | 
+   TOTAL: 6/1210 gambar diproses, 0 error
+2026-05-13 22:01:02,123 | INFO    |    Waktu total: 3.4 detik
+2026-05-13 22:01:02,123 | INFO    | 
+   🔍 Preview disimpan di: D:\Semester 6\Capstone\Data_Preprocessed\_preview
+2026-05-13 22:01:02,123 | INFO    | 
+✨ Preprocessing selesai!

@@ -25,6 +25,7 @@ import cv2
 import numpy as np
 import argparse
 import time
+import concurrent.futures
 from pathlib import Path
 from abc import ABC, abstractmethod
 
@@ -320,6 +321,19 @@ class BaseCCTVPreprocessor(ABC):
         result = self.resize_gambar(result)
         return result
 
+    def _proses_satu_gambar(self, filepath: Path, waktu: str, output_dir: Path):
+        """Helper untuk memproses satu gambar (dipanggil oleh thread worker)."""
+        try:
+            img = cv2.imread(str(filepath))
+            if img is None:
+                return False, f"Gagal baca: {filepath.name}"
+
+            hasil = self.preprocess(img, waktu)
+            cv2.imwrite(str(output_dir / filepath.name), hasil)
+            return True, None
+        except Exception as e:
+            return False, f"Error {filepath.name}: {e}"
+
     #  PROSES BATCH — Proses semua gambar di folder
     def proses_semua(self, waktu_filter: str = None):
         data_path = self.DATA_ROOT / self.folder_data
@@ -344,10 +358,11 @@ class BaseCCTVPreprocessor(ABC):
 
             # Kumpulkan file gambar
             ekstensi = {".jpg", ".jpeg", ".png", ".bmp"}
+            # CATATAN: Hapus [:4] jika Anda ingin memproses seluruh data di folder
             files = sorted([
                 f for f in input_dir.iterdir()
                 if f.suffix.lower() in ekstensi
-            ])[:4]
+            ])
 
             if not files:
                 print(f"Tidak ada gambar di {input_dir}.")
@@ -361,29 +376,29 @@ class BaseCCTVPreprocessor(ABC):
             print(f"Output: {output_dir}")
 
             start = time.time()
-            for idx, filepath in enumerate(files):
-                try:
-                    img = cv2.imread(str(filepath))
-                    if img is None:
-                        print(f"Gagal baca: {filepath.name}")
+            
+            # Gunakan ThreadPoolExecutor untuk menjalankan CPU secara paralel
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                # Submit semua tugas
+                futures = {
+                    executor.submit(self._proses_satu_gambar, filepath, waktu, output_dir): filepath
+                    for filepath in files
+                }
+                
+                # Proses hasil saat ada thread yang selesai
+                for idx, future in enumerate(concurrent.futures.as_completed(futures)):
+                    sukses, error_msg = future.result()
+                    
+                    if sukses:
+                        self.stats["processed"] += 1
+                    else:
+                        print(f" {error_msg}")
                         self.stats["errors"] += 1
-                        continue
 
-                    # Jalankan pipeline preprocessing
-                    hasil = self.preprocess(img, waktu)
-
-                    # Simpan hasil
-                    cv2.imwrite(str(output_dir / filepath.name), hasil)
-                    self.stats["processed"] += 1
-
-                    # Log progress setiap 100 gambar
+                    # Log progress
                     if (idx + 1) % 100 == 0 or (idx + 1) == len(files):
                         pct = ((idx + 1) / len(files)) * 100
                         print(f"{idx+1}/{len(files)} ({pct:.0f}%)")
-
-                except Exception as e:
-                    print(f"Error {filepath.name}: {e}")
-                    self.stats["errors"] += 1
 
             elapsed = time.time() - start
             print(f"Selesai dalam {elapsed:.1f} detik")

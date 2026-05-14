@@ -1,0 +1,31 @@
+[2026-05-12 21:56:31] INFO | tracking | ============================================================
+[2026-05-12 21:56:31] INFO | tracking | TRACKING & COUNTING — Buah Batu Traffic
+[2026-05-12 21:56:31] INFO | tracking | ============================================================
+[2026-05-12 21:56:31] INFO | tracking | Auto-detected model: d:\Semester 6\Capstone\runs\buahbatu_v1\weights\best.pt
+[2026-05-12 21:56:33] INFO | tracking | 
+Video: C:\Users\USER\Videos\Captures\ATCS Dishub Kota Bandung and 4 more pages - Personal - Microsoft​ Edge 2026-05-12 21-49-35.mp4
+  Resolution: 1920x1080
+  FPS: 30.0
+  Frames: 796
+  Duration: 26.6s (0.4m)
+[2026-05-12 21:56:33] INFO | tracking | 
+📌 Virtual Line: y=648 (down)
+[2026-05-12 21:56:33] INFO | tracking | 📌 Tracker config: d:\Semester 6\Capstone\configs\bytetrack.yaml
+[2026-05-12 21:56:33] INFO | tracking | 📌 Output: d:\Semester 6\Capstone\outputs\tracked_ATCS Dishub Kota Bandung and 4 more pages - Personal - Microsoft​ Edge 2026-05-12 21-49-35.mp4
+[2026-05-12 21:56:33] INFO | tracking | 
+🚀 Processing started...
+[2026-05-12 21:56:53] INFO | tracking |   Progress: 62.8% | Frame 500/796 | Count: 0 | FPS: 29.3
+[2026-05-12 21:56:56] INFO | tracking |   🚗 #5 Mobil crossed at frame 597 (t=19.9s) | Total: 1
+[2026-05-12 21:57:02] INFO | tracking | 
+============================================================
+[2026-05-12 21:57:02] INFO | tracking | 📊 COUNTING RESULTS
+[2026-05-12 21:57:02] INFO | tracking | ============================================================
+[2026-05-12 21:57:02] INFO | tracking | 
+Total: 1
+  Mobil: 1
+[2026-05-12 21:57:02] INFO | tracking | 
+Output video: d:\Semester 6\Capstone\outputs\tracked_ATCS Dishub Kota Bandung and 4 more pages - Personal - Microsoft​ Edge 2026-05-12 21-49-35.mp4
+[2026-05-12 21:57:04] INFO | tracking | CSV exported: d:\Semester 6\Capstone\outputs\tracked_ATCS Dishub Kota Bandung and 4 more pages - Personal - Microsoft​ Edge 2026-05-12 21-49-35.csv
+[2026-05-12 21:57:04] INFO | tracking | Summary CSV: d:\Semester 6\Capstone\outputs\tracked_ATCS Dishub Kota Bandung and 4 more pages - Personal - Microsoft​ Edge 2026-05-12 21-49-35_summary.csv
+[2026-05-12 21:57:04] INFO | tracking | ============================================================
+[2026-05-12 21:57:04] INFO | tracking | ✅ Tracking & counting complete!
