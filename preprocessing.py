@@ -312,13 +312,17 @@ class BaseCCTVPreprocessor(ABC):
     
     #  PIPELINE LENGKAP
     def preprocess(self, image: np.ndarray, waktu: str) -> np.ndarray:
+        # Revisi 3: Hanya terapkan masking teks pada gambar mentah
         result = self.masking_teks(image)
-        if waktu == "malam":
-            result = self.suppress_highlights(result)
-        result = self.sesuaikan_kecerahan(result, waktu)
-        result = self.sesuaikan_kontras(result, waktu)
-        result = self.sesuaikan_resolusi(result, waktu)
-        result = self.resize_gambar(result)
+        
+        # Langkah-langkah di bawah ini di-disable agar gambar mentah (original) terjaga
+        # if waktu == "malam":
+        #     result = self.suppress_highlights(result)
+        # result = self.sesuaikan_kecerahan(result, waktu)
+        # result = self.sesuaikan_kontras(result, waktu)
+        # result = self.sesuaikan_resolusi(result, waktu)
+        # result = self.resize_gambar(result)
+        
         return result
 
     def _proses_satu_gambar(self, filepath: Path, waktu: str, output_dir: Path):
@@ -427,61 +431,61 @@ class BubatBarat(BaseCCTVPreprocessor):
     def folder_output(self):
         return "bubat_barat"
 
-    # Parameter spesifik Bubat Barat
-    @property
-    def mask_regions_atas(self):
-        return [(0, 0, 350, 80),
-                (320,20,640,80)]
+    # # Parameter spesifik Bubat Barat
+    # @property
+    # def mask_regions_atas(self):
+    #     return [(0, 0, 350, 80),
+    #             (320,20,640,80)]
 
-    @property
-    def mask_regions_bawah(self):
-        return [(360, 355, 585, 390),
-                (360, 395, 610, 430)]
+    # @property
+    # def mask_regions_bawah(self):
+    #     return [(360, 355, 585, 390),
+    #             (360, 395, 610, 430)]
 
-    @property
-    def inpaint_radius(self):
-        return 4
+    # @property
+    # def inpaint_radius(self):
+    #     return 4
 
-    @property
-    def gamma_malam(self):
-        return 0.6
+    # @property
+    # def gamma_malam(self):
+    #     return 0.6
 
-    @property
-    def brightness_pagi(self):
-        return (0.95, 0)
+    # @property
+    # def brightness_pagi(self):
+    #     return (0.95, 0)
 
-    @property
-    def brightness_malam(self):
-        return (1.0, 0)
+    # @property
+    # def brightness_malam(self):
+    #     return (1.0, 0)
 
-    @property
-    def kontras_pagi(self):
-        return (1.8, (8, 8))
+    # @property
+    # def kontras_pagi(self):
+    #     return (1.8, (8, 8))
 
-    @property
-    def kontras_malam(self):
-        return (1.2, (8, 8))
+    # @property
+    # def kontras_malam(self):
+    #     return (1.2, (8, 8))
 
-    @property
-    def unsharp_mask_pagi(self):
-        return (1.5, -0.5)
+    # @property
+    # def unsharp_mask_pagi(self):
+    #     return (1.5, -0.5)
 
-    @property
-    def denoise_strength(self):
-        """Strength denoising untuk malam hari."""
-        return 6 
+    # @property
+    # def denoise_strength(self):
+    #     """Strength denoising untuk malam hari."""
+    #     return 6 
 
-    @property
-    def bilateral_filter_params(self):
-        return (7, 50, 50)
+    # @property
+    # def bilateral_filter_params(self):
+    #     return (7, 50, 50)
 
-    @property
-    def highlight_params(self):
-        return (220, 0.3)
+    # @property
+    # def highlight_params(self):
+    #     return (220, 0.3)
 
-    @property
-    def target_size(self):
-        return (640, 480)
+    # @property
+    # def target_size(self):
+    #     return (640, 480)
 
 
 
