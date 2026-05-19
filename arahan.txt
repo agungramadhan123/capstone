@@ -36,3 +36,7 @@ agar dapat di gunakan secara universal pada titik2 cctv lain, dan bisa di sesuai
 
 ## revisi 2
 untuk masking teks nya belum terlalu maksimal yang di mana pada kalimat angka dan % itu masih ada yang di mana saya mau hilangkan juga seperti langkah penghilangan teks lainnya
+
+
+#revisi 3 
+saya melihat kualitas gambar lebih bagus data awalnya di banding hasil preprocessingnya saya mau coba terapkan saja metode masking nya saja tanpa mengubah kecerahan, kontras dll pada gambar mentah
