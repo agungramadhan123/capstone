@@ -29,9 +29,9 @@ import concurrent.futures
 from pathlib import Path
 from abc import ABC, abstractmethod
 
-#  BASE CLASS — Template preprocessing untuk semua titik CCTV
+# BASE CLASS - Template preprocessing untuk semua titik CCTV
 class BaseCCTVPreprocessor(ABC):
-    # ── Path dasar (bisa di-override) ────────────────────────────
+    # Path dasar (bisa di-override)
     PROJECT_ROOT = Path(__file__).resolve().parent
     DATA_ROOT = PROJECT_ROOT / "Data"
     OUTPUT_ROOT = PROJECT_ROOT / "dataset_preprocessing"
@@ -40,7 +40,7 @@ class BaseCCTVPreprocessor(ABC):
         """Inisialisasi preprocessor."""
         self.stats = {"processed": 0, "errors": 0, "skipped": 0}
 
-    # ── Property yang wajib di-override ──────────────────────────
+    # Property yang wajib di-override
     @property
     @abstractmethod
     def nama(self) -> str:
@@ -65,7 +65,7 @@ class BaseCCTVPreprocessor(ABC):
         """Nama folder output di dataset_preprocessing/."""
         pass
 
-    # ── Parameter preprocessing (bisa di-override per lokasi) ────
+    # Parameter preprocessing (bisa di-override per lokasi)
 
     # Region masking teks overlay: [(x1, y1, x2, y2), ...]
     # Default untuk kamera Dishub Bandung 640x480

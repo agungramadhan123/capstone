@@ -1,25 +1,19 @@
 """
-=============================================================
- FASE 2 — CORE MONITORING APPLICATION (PRODUKSI & DEMO)
- 
- Vehicle Tracking, Counting & Analytics — Jalan Buah Batu
- Arsitektur: "Antigraviti" (Fail-Safe)
- 
- Fitur:
-   1. Fail-Safe RTSP → MP4 fallback (anti-crash)
-   2. YOLOv8 + ByteTrack dengan occlusion handling
-   3. Directional virtual line counting (sv.LineZone)
-   4. Anti-memory-leak CSV logging (TrafficLogger)
-   5. Premium Visual HUD + trace + dynamic line color
- 
- Cara menjalankan:
-   python main.py
-   python main.py --source video_buahbatu.mp4
-   python main.py --source rtsp://user:pass@ip:port/stream
-   python main.py --model runs/detect/cctv_bubat/finetune_v1-9/weights/best.pt
-   python main.py --show          # tampilkan window OpenCV
-   python main.py --save-video    # simpan output ke file
-=============================================================
+FASE 2 - CORE MONITORING APPLICATION (PRODUKSI & DEMO)
+
+Vehicle Tracking, Counting & Analytics - Jalan Buah Batu
+Arsitektur: Fail-Safe
+
+Fitur:
+  1. Fail-Safe RTSP/HTTP -> MP4 fallback (anti-crash)
+  2. YOLOv8 + ByteTrack dengan occlusion handling
+  3. Directional virtual line counting (sv.LineZone)
+  4. Anti-memory-leak CSV logging (TrafficLogger)
+  5. Premium Visual HUD + trace + dynamic line color
+
+Cara menjalankan:
+  python main.py
+  python main.py --source https://atcs-dishub.bandung.go.id:1990/Jamika/main_stream.m3u8
 """
 
 import os
@@ -38,7 +32,7 @@ from multiprocessing import freeze_support
 import supervision as sv
 from ultralytics import YOLO
 
-# ── KONFIGURASI DEFAULT ──────────────────────────────────────
+# KONFIGURASI DEFAULT
 PROJECT_ROOT = Path(__file__).resolve().parent
 
 DEFAULT_MODEL = str(
@@ -49,12 +43,11 @@ DEFAULT_VIDEO = str(PROJECT_ROOT / "video_buahbatu.mp4")
 DEFAULT_CSV = str(PROJECT_ROOT / "traffic_logs_buahbatu.csv")
 TRACKER_CONFIG = str(PROJECT_ROOT / "custom_bytetrack.yaml")
 
-# Kelas kendaraan (harus sesuai dengan data.yaml yang sudah bersih)
+# Kelas kendaraan (akan disinkronkan secara dinamis saat model dimuat)
 CLASS_NAMES = {0: "Bis", 1: "Mobil", 2: "Motor", 3: "Truk"}
-CLASS_EMOJIS = {0: "🚌", 1: "🚗", 2: "🏍", 3: "🚛"}
+CLASS_EMOJIS = {"Bis": "", "Mobil": "", "Motor": "", "Truk": ""}
 
-# Virtual Line — Koordinat default (sesuaikan dengan video Anda)
-# Garis horizontal di y=300 pada frame 640x480
+# Virtual Line - Koordinat default (sesuaikan dengan video Anda)
 LINE_START = sv.Point(x=0, y=300)
 LINE_END = sv.Point(x=640, y=300)
 
@@ -77,14 +70,12 @@ logging.basicConfig(
 logger = logging.getLogger("main")
 
 
-# ══════════════════════════════════════════════════════════════
-#  1. VIDEO SOURCE MANAGER — Fail-Safe RTSP → MP4 Fallback
-# ══════════════════════════════════════════════════════════════
+# 1. VIDEO SOURCE MANAGER - Fail-Safe RTSP -> MP4 Fallback
 class VideoSourceManager:
     """
     Mengelola input video dengan mekanisme fail-safe:
     - Coba RTSP stream terlebih dahulu
-    - Jika gagal/terputus → otomatis fallback ke video lokal
+    - Jika gagal/terputus -> otomatis fallback ke video lokal
     - Reconnect berkala ke RTSP setiap N detik
     """
 
@@ -113,20 +104,24 @@ class VideoSourceManager:
 
     def open(self) -> bool:
         """Buka sumber video. Coba RTSP dulu, lalu fallback."""
-        # Coba RTSP
         if self._try_open_rtsp():
             return True
 
-        # Fallback ke video lokal
         return self._try_open_fallback()
 
     def _try_open_rtsp(self) -> bool:
-        """Coba membuka RTSP stream."""
+        """Coba membuka stream jaringan utama (RTSP/HTTP/HTTPS)."""
+        if not self.rtsp_url:
+            return False
+        
+        is_rtsp = self.rtsp_url.startswith("rtsp://")
+        label = "RTSP LIVE" if is_rtsp else "LIVE STREAM"
+        
         try:
-            logger.info(f"Mencoba koneksi RTSP: {self.rtsp_url[:50]}...")
+            logger.info(f"Mencoba koneksi {label}: {self.rtsp_url[:50]}...")
             cap = cv2.VideoCapture(self.rtsp_url, cv2.CAP_FFMPEG)
 
-            # Set timeout pendek untuk RTSP
+            # Set timeout pendek untuk live stream
             cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 5000)
             cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 5000)
 
@@ -136,17 +131,17 @@ class VideoSourceManager:
                     self._release_current()
                     self._cap = cap
                     self._using_rtsp = True
-                    self._source_label = "RTSP LIVE"
-                    logger.info("✅ RTSP stream berhasil terhubung!")
+                    self._source_label = label
+                    logger.info(f"{label} berhasil terhubung!")
                     return True
                 else:
                     cap.release()
-                    logger.warning("⚠️ RTSP terbuka tapi tidak bisa membaca frame.")
+                    logger.warning(f"{label} terbuka tapi tidak bisa membaca frame.")
             else:
-                logger.warning("⚠️ RTSP gagal dibuka.")
+                logger.warning(f"{label} gagal dibuka.")
 
         except Exception as e:
-            logger.warning(f"⚠️ Exception saat koneksi RTSP: {e}")
+            logger.warning(f"Exception saat koneksi {label}: {e}")
 
         self._last_reconnect_attempt = time.time()
         return False
@@ -154,7 +149,7 @@ class VideoSourceManager:
     def _try_open_fallback(self) -> bool:
         """Buka video lokal sebagai fallback."""
         if not os.path.exists(self.fallback_path):
-            logger.error(f"❌ Video fallback tidak ditemukan: {self.fallback_path}")
+            logger.error(f"Video fallback tidak ditemukan: {self.fallback_path}")
             return False
 
         try:
@@ -164,10 +159,10 @@ class VideoSourceManager:
                 self._cap = cap
                 self._using_rtsp = False
                 self._source_label = f"LOCAL ({Path(self.fallback_path).name})"
-                logger.info(f"✅ Fallback ke video lokal: {self.fallback_path}")
+                logger.info(f"Fallback ke video lokal: {self.fallback_path}")
                 return True
         except Exception as e:
-            logger.error(f"❌ Gagal membuka video fallback: {e}")
+            logger.error(f"Gagal membuka video fallback: {e}")
 
         return False
 
@@ -196,19 +191,19 @@ class VideoSourceManager:
             else:
                 # Frame gagal dibaca
                 if self._using_rtsp:
-                    # RTSP terputus mid-stream → switch ke fallback
-                    logger.warning("⚠️ RTSP stream terputus! Switching ke fallback...")
+                    # RTSP terputus mid-stream -> switch ke fallback
+                    logger.warning("RTSP stream terputus! Switching ke fallback...")
                     self._last_reconnect_attempt = time.time()
                     if self._try_open_fallback():
                         return self.read()  # Baca frame pertama dari fallback
                     return False, None
                 else:
                     # Video lokal habis
-                    logger.info("📹 Video lokal selesai (end of file).")
+                    logger.info("Video lokal selesai (end of file).")
                     return False, None
 
         except Exception as e:
-            logger.error(f"❌ Exception saat membaca frame: {e}")
+            logger.error(f"Exception saat membaca frame: {e}")
             if self._using_rtsp:
                 logger.warning("Switching ke fallback...")
                 if self._try_open_fallback():
@@ -218,9 +213,9 @@ class VideoSourceManager:
     def _try_rtsp_reconnect(self):
         """Coba reconnect ke RTSP stream di background."""
         self._last_reconnect_attempt = time.time()
-        logger.info("🔄 Mencoba reconnect ke RTSP...")
+        logger.info("Mencoba reconnect ke RTSP...")
         if self._try_open_rtsp():
-            logger.info("✅ Reconnect RTSP berhasil! Beralih ke live stream.")
+            logger.info("Reconnect RTSP berhasil! Beralih ke live stream.")
 
     def get_fps(self) -> float:
         """Ambil FPS dari sumber video."""
@@ -249,12 +244,10 @@ class VideoSourceManager:
     def release(self):
         """Release semua resource."""
         self._release_current()
-        logger.info("📹 Video source ditutup.")
+        logger.info("Video source ditutup.")
 
 
-# ══════════════════════════════════════════════════════════════
-#  2. TRAFFIC LOGGER — Anti-Memory Leak CSV Logging
-# ══════════════════════════════════════════════════════════════
+# 2. TRAFFIC LOGGER - Anti-Memory Leak CSV Logging
 class TrafficLogger:
     """
     Logger efisien yang menulis event kendaraan langsung ke CSV.
@@ -292,9 +285,9 @@ class TrafficLogger:
         if not file_exists:
             self._writer.writerow(self.CSV_COLUMNS)
             self._file.flush()
-            logger.info(f"📄 CSV dibuat: {self.csv_path}")
+            logger.info(f"CSV dibuat: {self.csv_path}")
         else:
-            logger.info(f"📄 CSV append mode: {self.csv_path}")
+            logger.info(f"CSV append mode: {self.csv_path}")
 
     def log_crossing(self, frame_id: int, vehicle_id: int,
                      class_name: str, confidence: float, direction: str):
@@ -326,7 +319,7 @@ class TrafficLogger:
         stale_ids = self._logged_ids - active_track_ids
         if stale_ids:
             self._logged_ids -= stale_ids
-            logger.debug(f"🧹 Dibersihkan {len(stale_ids)} ID stale dari memori.")
+            logger.debug(f"Dibersihkan {len(stale_ids)} ID stale dari memori.")
 
     @property
     def total_logged(self) -> int:
@@ -338,12 +331,10 @@ class TrafficLogger:
             self._file.flush()
             self._file.close()
             self._file = None
-            logger.info(f"📄 CSV ditutup. Total {self.total_logged} event tercatat.")
+            logger.info(f"CSV ditutup. Total {self.total_logged} event tercatat.")
 
 
-# ══════════════════════════════════════════════════════════════
-#  3. DIRECTIONAL COUNTER — Virtual Line Crossing
-# ══════════════════════════════════════════════════════════════
+# 3. DIRECTIONAL COUNTER - Virtual Line Crossing
 class DirectionalCounter:
     """
     Penghitung kendaraan dengan arah menggunakan sv.LineZone.
@@ -362,8 +353,8 @@ class DirectionalCounter:
         )
 
         # Akumulasi total per kelas
-        self.counts_in = defaultdict(int)   # Masuk (Selatan → Utara)
-        self.counts_out = defaultdict(int)  # Keluar (Utara → Selatan)
+        self.counts_in = defaultdict(int)   # Masuk (Selatan -> Utara)
+        self.counts_out = defaultdict(int)  # Keluar (Utara -> Selatan)
 
         # Tracking posisi terakhir per ID untuk displacement check
         self._last_positions = {}
@@ -389,7 +380,7 @@ class DirectionalCounter:
         # Update LineZone crossing
         crossed_in, crossed_out = self.line_zone.trigger(detections=filtered)
 
-        # Proses crossing masuk (Selatan → Utara)
+        # Proses crossing masuk (Selatan -> Utara)
         if crossed_in.any():
             for i, crossed in enumerate(crossed_in):
                 if crossed and filtered.tracker_id is not None:
@@ -402,12 +393,12 @@ class DirectionalCounter:
                     new_crossings[tracker_id] = {
                         "class_name": class_name,
                         "confidence": confidence,
-                        "direction": "Selatan→Utara",
+                        "direction": "Selatan->Utara",
                     }
 
             self._flash_frames_remaining = 2  # Trigger flash effect
 
-        # Proses crossing keluar (Utara → Selatan)
+        # Proses crossing keluar (Utara -> Selatan)
         if crossed_out.any():
             for i, crossed in enumerate(crossed_out):
                 if crossed and filtered.tracker_id is not None:
@@ -420,7 +411,7 @@ class DirectionalCounter:
                     new_crossings[tracker_id] = {
                         "class_name": class_name,
                         "confidence": confidence,
-                        "direction": "Utara→Selatan",
+                        "direction": "Utara->Selatan",
                     }
 
             self._flash_frames_remaining = 2  # Trigger flash effect
@@ -448,7 +439,7 @@ class DirectionalCounter:
                 displacement = np.sqrt((cx - last_cx) ** 2 + (cy - last_cy) ** 2)
 
                 if displacement < self.min_displacement:
-                    mask[i] = False  # Tidak cukup bergerak → jangan count
+                    mask[i] = False  # Tidak cukup bergerak -> jangan count
 
             # Update posisi terakhir
             self._last_positions[tid] = (cx, cy)
@@ -480,9 +471,7 @@ class DirectionalCounter:
         return dict(totals)
 
 
-# ══════════════════════════════════════════════════════════════
-#  4. VISUAL HUD — Premium Overlay
-# ══════════════════════════════════════════════════════════════
+# 4. VISUAL HUD - Premium Overlay
 class VisualHUD:
     """
     Head-Up Display premium untuk visualisasi monitoring.
@@ -515,10 +504,10 @@ class VisualHUD:
             self._fps_history.pop(0)
         avg_fps = sum(self._fps_history) / len(self._fps_history)
 
-        # ── Panel kiri atas: Tabel kendaraan ──
+        # Panel kiri atas: Tabel kendaraan
         result = self._draw_vehicle_panel(result, counts)
 
-        # ── Panel kanan atas: Info status ──
+        # Panel kanan atas: Info status
         result = self._draw_status_panel(result, source_label, frame_id, avg_fps)
 
         return result
@@ -623,9 +612,7 @@ class VisualHUD:
         return frame
 
 
-# ══════════════════════════════════════════════════════════════
-#  5. MAIN APPLICATION — Pipeline Utama
-# ══════════════════════════════════════════════════════════════
+# 5. MAIN APPLICATION - Pipeline Utama
 class TrafficMonitorApp:
     """
     Aplikasi utama monitoring lalu lintas.
@@ -641,9 +628,10 @@ class TrafficMonitorApp:
         """Inisialisasi seluruh komponen."""
         args = self.args
 
-        # ── 1. Video Source ──
-        rtsp_url = args.source if args.source.startswith("rtsp://") else DEFAULT_RTSP
-        fallback = args.source if not args.source.startswith("rtsp://") else DEFAULT_VIDEO
+        # 1. Video Source
+        is_net = args.source.startswith(("rtsp://", "http://", "https://"))
+        rtsp_url = args.source if is_net else ""
+        fallback = DEFAULT_VIDEO if is_net else args.source
 
         self.video_source = VideoSourceManager(
             rtsp_url=rtsp_url,
@@ -651,17 +639,25 @@ class TrafficMonitorApp:
             reconnect_interval=30,
         )
 
-        # ── 2. YOLO Model ──
+        # 2. YOLO Model
         logger.info(f"Loading model: {args.model}")
         self.model = YOLO(args.model)
 
-        # ── 3. Traffic Logger ──
+        # Sinkronisasi CLASS_NAMES secara dinamis berdasarkan nama kelas model untuk mengantisipasi model 5-kelas (kotor)
+        global CLASS_NAMES
+        CLASS_NAMES.clear()
+        for cid, cname in self.model.names.items():
+            if cname not in ["Labelling-data-lalu-lintas", "Labelling-data-laku-lintas"]:
+                CLASS_NAMES[cid] = cname
+        logger.info(f"Dynamic CLASS_NAMES initialized: {CLASS_NAMES}")
+
+        # 3. Traffic Logger
         self.traffic_logger = TrafficLogger(
             csv_path=args.csv_output,
             flush_interval=100,
         )
 
-        # ── 4. Directional Counter ──
+        # 4. Directional Counter
         self.counter = DirectionalCounter(
             line_start=LINE_START,
             line_end=LINE_END,
@@ -669,10 +665,10 @@ class TrafficMonitorApp:
             min_displacement=MIN_DISPLACEMENT_PX,
         )
 
-        # ── 5. Visual HUD ──
+        # 5. Visual HUD
         self.hud = VisualHUD()
 
-        # ── 6. Supervision Annotators ──
+        # 6. Supervision Annotators
         self.box_annotator = sv.BoxAnnotator(
             thickness=2,
         )
@@ -691,37 +687,37 @@ class TrafficMonitorApp:
             text_thickness=1,
         )
 
-        # ── 7. Output video writer ──
+        # 7. Output video writer
         self.video_writer = None
 
-        # ── 8. Cleanup interval ──
+        # 8. Cleanup interval
         self._cleanup_interval = 300  # Setiap 300 frame
         self._frame_times = []
 
     def run(self):
         """Jalankan pipeline monitoring utama."""
-        logger.info("🚀 Memulai Traffic Monitor — Jalan Buah Batu")
+        logger.info("Memulai Traffic Monitor - Jalan Buah Batu")
 
         # Buka video source
         if not self.video_source.open():
-            logger.error("❌ Tidak bisa membuka sumber video! Pastikan RTSP atau file MP4 tersedia.")
+            logger.error("Tidak bisa membuka sumber video! Pastikan RTSP atau file MP4 tersedia.")
             return
 
         fps = self.video_source.get_fps()
         frame_w, frame_h = self.video_source.get_frame_size()
-        logger.info(f"📹 Video: {frame_w}x{frame_h} @ {fps:.1f} FPS")
+        logger.info(f"Video: {frame_w}x{frame_h} @ {fps:.1f} FPS")
 
         # Setup video writer jika diminta
         if self.args.save_video:
             output_path = str(PROJECT_ROOT / "output_monitoring.mp4")
             fourcc = cv2.VideoWriter_fourcc(*"mp4v")
             self.video_writer = cv2.VideoWriter(output_path, fourcc, fps, (frame_w, frame_h))
-            logger.info(f"💾 Output video: {output_path}")
+            logger.info(f"Output video: {output_path}")
 
         try:
             self._processing_loop(fps)
         except KeyboardInterrupt:
-            logger.info("\n⏹️ Dihentikan oleh pengguna (Ctrl+C)")
+            logger.info("\nDihentikan oleh pengguna (Ctrl+C)")
         finally:
             self._cleanup()
 
@@ -732,14 +728,14 @@ class TrafficMonitorApp:
         while True:
             loop_start = time.time()
 
-            # ── Baca frame ──
+            # Baca frame
             success, frame = self.video_source.read()
             if not success:
                 break
 
             frame_id += 1
 
-            # ── Deteksi + Tracking ──
+            # Deteksi + Tracking
             results = self.model.track(
                 source=frame,
                 persist=True,
@@ -752,10 +748,10 @@ class TrafficMonitorApp:
             # Konversi hasil ke sv.Detections
             detections = sv.Detections.from_ultralytics(results[0])
 
-            # ── Update counter (line crossing) ──
+            # Update counter (line crossing)
             new_crossings = self.counter.update(detections, frame_id)
 
-            # ── Log crossing events ke CSV ──
+            # Log crossing events ke CSV
             for vehicle_id, info in new_crossings.items():
                 self.traffic_logger.log_crossing(
                     frame_id=frame_id,
@@ -765,7 +761,7 @@ class TrafficMonitorApp:
                     direction=info["direction"],
                 )
 
-            # ── Cleanup berkala (anti-memory leak) ──
+            # Cleanup berkala (anti-memory leak)
             if frame_id % self._cleanup_interval == 0:
                 active_ids = set()
                 if detections.tracker_id is not None:
@@ -773,21 +769,21 @@ class TrafficMonitorApp:
                 self.traffic_logger.cleanup_stale_ids(active_ids)
                 self.counter.cleanup_positions(active_ids)
 
-            # ── Visualisasi ──
+            # Visualisasi
             annotated = self._annotate_frame(frame, detections, frame_id, loop_start)
 
-            # ── Output ──
+            # Output
             if self.args.show:
                 cv2.imshow("Traffic Monitor - Buah Batu", annotated)
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord("q") or key == 27:  # 'q' atau ESC
-                    logger.info("⏹️ Keluar (tekan 'q')")
+                    logger.info("Keluar (tekan 'q')")
                     break
 
             if self.video_writer:
                 self.video_writer.write(annotated)
 
-            # ── Logging periodik ──
+            # Logging periodik
             if frame_id % 500 == 0:
                 counts = self.counter.total_counts
                 total = sum(counts.values())
@@ -802,19 +798,20 @@ class TrafficMonitorApp:
         """Buat frame teranotasi dengan semua visual overlay."""
         annotated = frame.copy()
 
-        # ── 1. Trace annotator (ekor pergerakan) ──
-        annotated = self.trace_annotator.annotate(
-            scene=annotated,
-            detections=detections,
-        )
+        # 1. Trace annotator (ekor pergerakan)
+        if detections.tracker_id is not None:
+            annotated = self.trace_annotator.annotate(
+                scene=annotated,
+                detections=detections,
+            )
 
-        # ── 2. Bounding box ──
+        # 2. Bounding box
         annotated = self.box_annotator.annotate(
             scene=annotated,
             detections=detections,
         )
 
-        # ── 3. Label ──
+        # 3. Label
         labels = []
         if detections.tracker_id is not None:
             for i in range(len(detections)):
@@ -836,10 +833,8 @@ class TrafficMonitorApp:
             labels=labels,
         )
 
-        # ── 4. Virtual line (dengan efek warna dinamis) ──
-        # Efek flash: merah saat ada crossing, hijau default
+        # 4. Virtual line (dengan efek warna dinamis)
         if self.counter.should_flash:
-            # Ubah warna line zone ke merah sementara
             self.line_annotator = sv.LineZoneAnnotator(
                 thickness=3,
                 text_scale=0.5,
@@ -859,7 +854,7 @@ class TrafficMonitorApp:
             line_counter=self.counter.line_zone,
         )
 
-        # ── 5. HUD overlay ──
+        # 5. HUD overlay
         elapsed = time.time() - loop_start
         fps = 1.0 / elapsed if elapsed > 0 else 0
         counts = self.counter.total_counts
@@ -887,26 +882,18 @@ class TrafficMonitorApp:
         # Print ringkasan akhir
         counts = self.counter.total_counts
         total = sum(counts.values())
-        print(f"\n{'='*55}")
-        print(f"  📊 RINGKASAN MONITORING")
-        print(f"{'='*55}")
-        print(f"  Total kendaraan melintas: {total}")
+        print("\nRINGKASAN MONITORING")
+        print(f"Total kendaraan melintas: {total}")
         for cls_name, cnt in sorted(counts.items()):
-            emoji = CLASS_EMOJIS.get(
-                next((k for k, v in CLASS_NAMES.items() if v == cls_name), -1), ""
-            )
-            print(f"    {emoji} {cls_name:8s}: {cnt}")
-        print(f"  Frame diproses: {self.video_source.frame_count}")
-        print(f"  CSV output: {self.args.csv_output}")
-        print(f"{'='*55}\n")
+            print(f"    {cls_name:8s}: {cnt}")
+        print(f"Frame diproses: {self.video_source.frame_count}")
+        print(f"CSV output: {self.args.csv_output}\n")
 
 
-# ══════════════════════════════════════════════════════════════
-#  ENTRY POINT
-# ══════════════════════════════════════════════════════════════
+# ENTRY POINT
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Traffic Monitor — Jalan Buah Batu, Bandung",
+        description="Traffic Monitor - Jalan Buah Batu, Bandung",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Contoh penggunaan:
@@ -916,8 +903,6 @@ Contoh penggunaan:
   python main.py video.mp4 --save-video
         """,
     )
-    # Positional arg: file yang di-drag-drop atau diketik langsung
-    # nargs='*' agar nama file dengan spasi (tanpa tanda kutip) tetap terbaca
     parser.add_argument(
         "source_positional", nargs="*", default=None,
         help="Sumber video (drag-and-drop atau ketik path langsung)"
@@ -953,7 +938,6 @@ Contoh penggunaan:
     if args.source:
         pass  # Gunakan --source langsung
     elif args.source_positional:
-        # Gabungkan token positional (handle nama file dengan spasi tanpa kutip)
         args.source = " ".join(args.source_positional)
     else:
         args.source = DEFAULT_VIDEO
