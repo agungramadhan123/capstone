@@ -1,9 +1,9 @@
-train: ../train/images
-val: ../valid/images
-test: ../test/images
+train: D:/Semester 6/Capstone/data bubat timur/train/images
+val: D:/Semester 6/Capstone/valid/images
+test: D:/Semester 6/Capstone/test/images
 
-nc: 5
-names: ['Bis', 'Labelling-data-lalu-lintas', 'Mobil', 'Motor', 'Truk']
+nc: 4
+names: ['Bis', 'Mobil', 'Motor', 'Truk']
 
 roboflow:
   workspace: agungs-workspace-gqb74

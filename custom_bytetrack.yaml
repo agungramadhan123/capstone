@@ -1,0 +1,45 @@
+# ==============================================================
+#  CUSTOM BYTETRACK CONFIGURATION — Jalan Buah Batu, Bandung
+#  
+#  Dioptimalkan untuk kondisi:
+#  - Kemacetan padat (motor berdempetan)
+#  - Angkot ngetem/berhenti mendadak
+#  - Oklusi antar kendaraan tinggi
+#  - Kecepatan rendah saat jam sibuk
+# ==============================================================
+
+tracker_type: bytetrack
+
+# ── PARAMETER TRACKING UTAMA ─────────────────────────────────
+
+# Threshold confidence untuk deteksi utama (first-stage matching)
+# Objek dengan confidence >= 0.25 akan langsung di-match
+track_high_thresh: 0.25
+
+# Threshold confidence untuk deteksi sekunder (second-stage matching)
+# Objek dengan confidence 0.1–0.25 tetap dilacak oleh Kalman Filter
+# KRITIS: mempertahankan ID motor yang terhalang kendaraan lain
+track_low_thresh: 0.1
+
+# Threshold overlap IoU untuk new track creation
+# Track baru hanya dibuat jika IoU dengan track existing < 0.7
+new_track_thresh: 0.25
+
+# ── BUFFER & PERSISTENCE ─────────────────────────────────────
+
+# Jumlah frame sebelum track dihapus (lost → removed)
+# 90 frame ≈ 3 detik pada 30fps
+# TUJUAN: Angkot 05 yang ngetem di pinggir jalan Buah Batu
+#         tidak akan kehilangan ID-nya selama 3 detik
+track_buffer: 90
+
+# Threshold IoU untuk matching
+match_thresh: 0.8
+
+# ── KALMAN FILTER ─────────────────────────────────────────────
+# (Parameter default ByteTrack, cukup stabil untuk CCTV statis)
+
+# Factor for Kalman Filter motion model uncertainty
+# Semakin kecil → Kalman lebih percaya prediksi model gerak
+# Semakin besar → Kalman lebih percaya deteksi baru
+fuse_score: true

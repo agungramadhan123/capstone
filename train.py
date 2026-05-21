@@ -20,7 +20,6 @@ RUN_NAME         = "finetune_v1"
 def _find_data_yaml(path="data.yaml"):
     if os.path.exists(path):
         return path
-    # cari file data.yaml di subfolder
     matches = glob.glob("**/data.yaml", recursive=True)
     return matches[0] if matches else None
 

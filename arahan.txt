@@ -1,118 +1,56 @@
-Saya ingin melakukan training ulang (fine-tuning) model YOLOv8 secara lokal menggunakan GPU NVIDIA RTX 5060 8GB untuk sistem deteksi kendaraan CCTV lalu lintas.
+Bertindaklah sebagai Senior AI Engineer dan Systems Architect. Saya sedang membangun sistem "Vehicle Tracking, Counting, and Analytics" siap produksi untuk Jalan Buah Batu, Bandung, menggunakan Ultralytics YOLOv8, ByteTrack, dan Roboflow Supervision.
 
-Kondisi dataset:
-- Dataset berasal dari Roboflow
-- Dataset sudah dalam format YOLOv8
-- Dataset sebelumnya pernah digunakan untuk training
-- Dataset terdiri dari:
-  1. Titik Timur
-  2. Titik Barat
-- Timur dan Barat berasal dari workspace Roboflow yang berbeda
-- data bubat timur berjumlah 963 gambar
-- data bubat barat berjumlah 868 gambar
-- Total dataset sekitar 1831 gambar
-- Dataset mencakup kondisi:
-  - pagi
-  - malam
-- Kamera CCTV bersifat statis
-- Terdapat frame-frame yang mirip antar video
-- Target utama:
-  - deteksi kendaraan stabil
-  - performa malam hari bagus
-  - object kecil seperti motor tetap terdeteksi
-  - inference realtime CCTV
+Bantu saya menyusun seluruh arsitektur kode, skrip penunjang, dan metodologi pengujian secara berurutan berdasarkan 4 fase berikut. Berikan kode yang clean, modular, efisien, dan memiliki manajemen memori yang sangat ketat (anti-memory leak).
 
-Saya ingin proses training yang fokus untuk:
-- generalisasi kondisi pagi/malam
-- mengurangi overfitting frame CCTV yang mirip
-- meningkatkan robustness terhadap blur, noise, glare lampu malam, dan shadow
+---
 
-Gunakan:
-- Framework: Ultralytics YOLOv8
-- GPU: RTX 5060 8GB CUDA
-- Training mode: fine-tuning dari best.pt sebelumnya
-- Model utama:
-  - yolov8s.pt
-- Image size:
-  - 640
-- Epoch:
-  - 300
-- Batch:
-  - 16
-- Mixed precision:
-  - aktif
-- Cache:
-  - aktif jika aman
-- Early stopping:
-  - aktif
-- Save best:
-  - aktif
+### FASE 1: CLEANING DATASET & RE-VALIDATION (HULU)
+1. Buat skrip Python untuk mendeteksi dan menghapus kelas bias bernama "Labelling-data-laku-lintas" dari file konfigurasi `data.yaml`.
+2. Skrip harus otomatis menyesuaikan jumlah kelas (nc) menjadi 4 kelas valid saja ('Bis', 'Mobil', 'Motor', 'Truk') tanpa merusak urutan indeks kelas lainnya.
+3. Tulis skrip pendek untuk menjalankan validasi ulang (`model.val()`) menggunakan model 'best.pt' terakhir saya dan data.yaml yang baru dibersihkan untuk memperbarui nilai mAP@0.5 murni tanpa harus retrain dari awal.
 
-Saya membutuhkan rekomendasi augmentasi yang spesifik untuk CCTV lalu lintas pagi dan malam.
+---
 
-Tolong buatkan konfigurasi augmentasi YOLOv8 yang optimal untuk:
-- kendaraan kecil
-- kondisi malam
-- glare lampu kendaraan
-- noise CCTV
-- blur gerakan
-- perubahan pencahayaan
-- shadow
-- hujan ringan
-- variasi exposure
-- sudut kendaraan berbeda
-- kondisi macet dan overlap kendaraan
+### FASE 2: CORE MONITORING APPLICATION (PRODUKSI & DEMO)
+Buat skrip utama `main.py` untuk pemrosesan video dengan arsitektur ketat "Antigraviti" (Fail-Safe) dan visualisasi tingkat tinggi untuk demo publik:
 
-Tetapi augmentasi harus tetap realistis untuk CCTV statis dan tidak berlebihan.
+1. FAIL-SAFE INPUT HANDLING:
+- Gunakan OpenCV VideoCapture. Sistem harus mencoba membaca Live RTSP Stream URL CCTV ATCS.
+- Jika koneksi RTSP gagal atau terputus tengah jalan, tangkap exception tersebut dan secara otomatis (seamless) alihkan input ke file video lokal (.mp4) cadangan tanpa menghentikan program (anti-crash).
 
-Saya ingin penjelasan detail:
-1. augmentasi apa saja yang digunakan
-2. alasan penggunaan tiap augmentasi
-3. augmentasi mana yang sebaiknya dikurangi atau dimatikan
-4. augmentasi mana yang berbahaya untuk CCTV
-5. pengaruh augmentasi terhadap overfitting
-6. pengaruh augmentasi terhadap deteksi malam hari
-7. pengaruh augmentasi terhadap object kecil seperti motor
+2. OPTIMAL TRACKING & OCCLUSION HANDLING:
+- Integrasikan YOLOv8 (v8s atau v8m) dengan ByteTrack (`model.track(..., persist=True)`).
+- Konfigurasikan pelacakan dua tahap (Two-Stage Matching): set `track_thresh=0.25` untuk deteksi utama, namun izinkan Kalman Filter melacak objek dengan confidence rendah (0.1 - 0.25) untuk mempertahankan ID sepeda motor yang saling berdempetan atau terhalang kendaraan lain (occlusion).
+- Naikkan `track_buffer` ke 60/90 frame agar sistem tidak memberikan ID baru saat Angkot 05 mendadak berhenti/ngetem di pinggir jalan Buah Batu.
+- Tambahkan logika displacement minimal (piksel): jika pusat objek tidak berpindah secara signifikan, kunci statusnya agar tidak memicu double-count saat terjadi macet total di atas garis.
 
-Tolong sertakan konfigurasi training lengkap yang optimal untuk RTX 5060 8GB seperti:
-- hsv_h
-- hsv_s
-- hsv_v
-- degrees
-- translate
-- scale
-- shear
-- perspective
-- flipud
-- fliplr
-- mosaic
-- mixup
-- copy_paste
-- erasing
-- close_mosaic
+3. DIRECTIONAL VIRTUAL LINE CROSSING:
+- Manfaatkan `sv.LineZone` dan `sv.LineZoneAnnotator` dari Supervision.
+- Buat garis horizontal satu arah (misal: hanya menghitung arus dari Selatan ke Utara).
 
-Target training:
-- precision tinggi
-- recall tinggi
-- mAP50 stabil
-- bounding box stabil di video CCTV
-- minim false positive lampu malam
-- minim object miss saat macet
+4. ANTI-MEMORY LEAK REAL-TIME LOGGING:
+- Buat class `TrafficLogger` untuk mencatat event kendaraan langsung ke file `traffic_logs_buahbatu.csv`.
+- Gunakan modul `csv` bawaan Python dengan mode append (`'a'`). Jangan simpan data di dalam Pandas DataFrame selama loop video berjalan untuk mencegah RAM membengkak.
+- Struktur kolom CSV: `timestamp` (YYYY-MM-DD HH:MM:SS), `frame_id`, `vehicle_id`, `class_name`, `confidence`, `direction`.
+- Secara berkala, bersihkan ID lama dari memori penampung lokal (`set`) jika ByteTrack sudah resmi menghapus ID tersebut dari buffer aktif.
 
-Saya juga ingin:
-1. command training final lengkap
-2. rekomendasi augmentasi terbaik untuk dataset kecil (~1800 gambar)
-3. strategi anti-overfitting untuk CCTV
-4. strategi validasi yang benar agar hasil evaluasi tidak bias
-5. rekomendasi kapan mosaic dimatikan
-6. rekomendasi kapan mixup digunakan atau dihindari
-7. konfigurasi augmentasi khusus malam hari
-8. konfigurasi augmentasi khusus kendaraan kecil
-9. best practice training YOLOv8 untuk CCTV lalu lintas realtime
+5. VISUAL HUD & THE "WOW" FACTOR:
+- Tampilkan bounding box yang bersih dengan trace ekor pergerakan (`sv.TraceAnnotator`).
+- Tampilkan papan informasi (HUD) akumulasi total kendaraan per kelas di pojok kiri atas dengan background semi-transparan yang estetik.
+- Efek Visual Garis: Ubah warna virtual line secara dinamis (Hijau secara default, dan berkedip Merah selama 2 frame saat ada kendaraan yang sah melintas, lalu kembali Hijau).
 
-Buatkan hasil akhir berupa:
-- command terminal lengkap
-- contoh file YAML hyperparameter augmentasi
-- penjelasan parameter
-- rekomendasi tuning bertahap
-- optimasi GPU 8GB
+---
+
+### FASE 3: VALIDASI LAPANGAN & EVALUASI JAM SIBUK (1 JAM)
+Buat skrip analisis terpisah `evaluate_accuracy.py` untuk menguji performa sistem setelah merekam video 1 jam di jam sibuk Buah Batu:
+
+1. AGREGASI INTERVAL TIME-SERIES:
+- Baca file `traffic_logs_buahbatu.csv` hasil rekaman menggunakan Pandas.
+- Lakukan resample data otomatis untuk mengelompokkan total hitungan kendaraan per interval 5 menit (total 12 blok data dalam 1 jam).
+
+2. KALKULASI AKURASI & MAE:
+- Sediakan dictionary/array untuk memasukkan data hitungan manual manusia (Ground Truth) per 5 menit sebagai pembanding.
+- Hitung nilai Mean Absolute Error (MAE) per kelas kendaraan menggunakan rumus formal MAE.
+- Tampilkan tabel komparasi akhir antara Hitungan Sistem vs Hitungan Manual beserta persentase akurasi akhir per kelas untuk laporan performa project.
+
+Berikan seluruh implementasi kode di atas secara terstruktur, modular, dan siap dijalankan.
