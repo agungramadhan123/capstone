@@ -1,0 +1,4 @@
+split,dataset_root,jumlah_gambar,jumlah_file_label,jumlah_bbox,gambar_tanpa_label,label_tanpa_gambar,label_kosong,label_hilang,label_invalid
+train_bubat_barat,C:\Users\hanif\Downloads\capstone-agung\capstone-agung\data bubat barat\train,1500,1500,14599,0,0,50,0,4040
+train_bubat_timur,C:\Users\hanif\Downloads\capstone-agung\capstone-agung\data bubat timur\train,868,868,5889,0,0,2,0,2853
+valid,C:\Users\hanif\Downloads\capstone-agung\capstone-agung\valid,0,23,0,0,23,0,0,0
