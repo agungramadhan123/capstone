@@ -1,10 +1,12 @@
-train: D:/Semester 6/Capstone/data bubat barat/train/images
-val: D:/Semester 6/Capstone/valid/images
-test: D:/Semester 6/Capstone/test/images
-
+train: ../train/images
+val: ../valid/images
+test: ../test/images
 nc: 4
-names: ['Bis', 'Mobil', 'Motor', 'Truk']
-
+names:
+- Bis
+- Mobil
+- Motor
+- Truk
 roboflow:
   workspace: agungs-workspace-gqb74
   project: agungs-workspace-gqb74

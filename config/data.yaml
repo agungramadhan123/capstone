@@ -1,0 +1,12 @@
+# ============================================================
+# [RESTRUCTURED] File dipindahkan dari root/ → config/
+# Lokasi baru: config/data.yaml
+# Perubahan: Path relatif diupdate dengan ../ karena file pindah ke subfolder
+# ============================================================
+train: 
+  - ../data bubat barat/train/images
+  - ../data bubat timur/train/images
+val: ../valid/images
+test: ../test/images
+nc: 4
+names: ['Bis', 'Mobil', 'Motor', 'Truk']

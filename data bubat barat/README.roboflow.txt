@@ -2,7 +2,7 @@
 Labelling data lalu lintas - vdataset agungs-workspace-gqb74
 ==============================
 
-This dataset was exported via roboflow.com on May 18, 2026 at 2:20 PM GMT
+This dataset was exported via roboflow.com on May 23, 2026 at 2:43 AM GMT
 
 Roboflow is an end-to-end computer vision platform that helps you
 * collaborate with your team on computer vision projects
