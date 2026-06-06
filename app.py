@@ -22,7 +22,11 @@ app.add_middleware(
 model = YOLO("./best")
 
 # Gunakan webcam (angka 0) dulu untuk tes darurat malam ini
-camera = cv2.VideoCapture(0)
+camera = cv2.VideoCapture("video.mp4")
+
+if not camera.isOpened():
+    print("Camera not available")
+    camera = None
 
 latest_vehicle_count = 0
 
@@ -57,16 +61,13 @@ latest_vehicle_count = 0
 # 3. Fungsi Generator untuk memproses Video + Deteksi YOLOv8
 def generate_frames():
     global latest_vehicle_count
-    
-    # diarahkan ke file video rekaman yang sudah kamu siapkan (misal video.mp4)
-    camera = cv2.VideoCapture(0)
+    global camera
     
     while True:
+        if camera is None:
+            break
+
         success, frame = camera.read()
-        if not success:
-            # Jika video habis, putar ulang dari awal biar terus looping
-            camera.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            continue
         
         # Jalankan prediksi objek menggunakan model 'best'
         # conf=0.4 artinya model hanya mengambil deteksi yang tingkat yakinnya di atas 40%
