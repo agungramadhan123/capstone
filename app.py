@@ -1,15 +1,16 @@
-
 import uvicorn
-from fastapi import FastAPI
+import cv2
+import shutil
+import os
+from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
-import cv2
 from ultralytics import YOLO
+from datetime import datetime, timedelta
 
-# Inisialisasi aplikasi FastAPI
 app = FastAPI()
 
-# Blok Sakti CORS biar Google Chrome tidak memblokir datanya
+# 1. Konfigurasi CORS hanya sekali
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,120 +19,64 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load model YOLO dari folder 'best' yang sudah kamu masukkan tadi
-model = YOLO("./best")
+# 2. Load model
+# Menggunakan os.path agar lebih stabil saat deploy ke Linux
+model_path = os.path.join(os.getcwd(), "best")
+model = YOLO(model_path, task="detect")
 
-# Gunakan webcam (angka 0) dulu untuk tes darurat malam ini
+# Inisialisasi video (ganti "video.mp4" dengan path video yang benar)
 camera = cv2.VideoCapture("video.mp4")
-
-if not camera.isOpened():
-    print("Camera not available")
-    camera = None
-
 latest_vehicle_count = 0
 
-# 2. Tambahkan blok sakti ini agar React diizinkan mengambil video
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Mengizinkan semua alamat (termasuk localhost:5173 kamu)
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Cache untuk update 5 menit sekali
+last_detection_time = None
+cached_data = None
 
-# ... (sisa kode fungsi generator dan model YOLO kamu di bawahnya biarkan saja)
-
-# 2. Aktifkan CORS agar frontend React bisa mengakses backend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Load model 'best' hasil training dari Agung
-# Pastikan folder bernama 'best' berada satu lokasi/sejajar dengan file app.py ini
-# Diarahkan langsung ke nama foldernya menggunakan './' biar Python tahu itu folder lokal
-model = YOLO("./best")
-
-# Variabel global untuk menyimpan hitungan kendaraan terbaru secara real-time
-latest_vehicle_count = 0
-
-# 3. Fungsi Generator untuk memproses Video + Deteksi YOLOv8
+# 3. Fungsi Generator untuk deteksi real-time
 def generate_frames():
-    global latest_vehicle_count
-    global camera
-    
+    global latest_vehicle_count, camera
     while True:
-        if camera is None:
+        if camera is None or not camera.isOpened():
             break
-
         success, frame = camera.read()
+        if not success: break
         
-        # Jalankan prediksi objek menggunakan model 'best'
-        # conf=0.4 artinya model hanya mengambil deteksi yang tingkat yakinnya di atas 40%
         results = model(frame, conf=0.4)
-        
-        # Hitung berapa banyak objek/kendaraan yang terdeteksi di frame ini
-        if len(results) > 0:
-            latest_vehicle_count = len(results[0].boxes)
-        else:
-            latest_vehicle_count = 0
-            
-        # Gambar kotak hasil deteksi (annotated) ke atas frame video
+        latest_vehicle_count = len(results[0].boxes) if len(results) > 0 else 0
         annotated_frame = results[0].plot()
         
-        # Encode frame gambar menjadi JPG untuk dikirim via HTTP streaming
         ret, buffer = cv2.imencode('.jpg', annotated_frame)
-        frame_bytes = buffer.tobytes()
-        
         yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+               b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
 
-# 4. API Endpoint untuk menyuplai Angka Hitungan Kendaraan Asli ke React
-# API Endpoint yang sudah disesuaikan dengan format Object yang diminta React kamu
+# 4. API Endpoint dengan logika update 5 menit
 @app.get("/api/traffic")
 def get_traffic_data():
-    global latest_vehicle_count
+    global last_detection_time, cached_data, latest_vehicle_count
     
-    # Kita kembalikan dalam bentuk Dictionary/Object {}, bukan List []
-    return {
-        "1": {
-            "id": "1", 
-            "name": "JL. BUAH BATU (KAMERA LIVE)", 
-            "vehicleCount": latest_vehicle_count, 
-            "maxCapacity": 100, 
-            "status": "recommended" if latest_vehicle_count < 50 else "not-recommended"
-        },
-        "2": {
-            "id": "2", 
-            "name": "JL. SOEKARNO HATTA", 
-            "vehicleCount": 42, 
-            "maxCapacity": 100, 
-            "status": "recommended"
-        },
-        "3": {
-            "id": "3", 
-            "name": "JL. PELAJAR PEJUANG", 
-            "vehicleCount": 65, 
-            "maxCapacity": 100, 
-            "status": "not-recommended"
-        },
-        "4": {
-            "id": "4", 
-            "name": "JL. TERUSAN BUAH BATU", 
-            "vehicleCount": 22, 
-            "maxCapacity": 100, 
-            "status": "recommended"
+    # Update hanya jika data kosong atau sudah lewat 5 menit
+    if last_detection_time is None or (datetime.now() - last_detection_time) > timedelta(minutes=5):
+        cached_data = {
+            "1": {"id": "1", "name": "JL. BUAH BATU (KAMERA LIVE)", "vehicleCount": latest_vehicle_count, "maxCapacity": 100, "status": "recommended" if latest_vehicle_count < 50 else "not-recommended"},
+            "2": {"id": "2", "name": "JL. SOEKARNO HATTA", "vehicleCount": 42, "maxCapacity": 100, "status": "recommended"},
+            "3": {"id": "3", "name": "JL. PELAJAR PEJUANG", "vehicleCount": 65, "maxCapacity": 100, "status": "not-recommended"},
+            "4": {"id": "4", "name": "JL. TERUSAN BUAH BATU", "vehicleCount": 22, "maxCapacity": 100, "status": "recommended"}
         }
-    }
+        last_detection_time = datetime.now()
+        
+    return cached_data
 
-# 5. API Endpoint untuk kirim live streaming video kotak hijau ke React
 @app.get('/api/video_feed')
 def video_feed():
     return StreamingResponse(generate_frames(), media_type='multipart/x-mixed-replace; boundary=frame')
 
-# 6. Menjalankan Server
+@app.post("/api/upload-video")
+async def upload_video(file: UploadFile = File(...)):
+    temp_path = f"temp_{file.filename}"
+    with open(temp_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return {"message": "Video berhasil diunggah", "path": temp_path}
+
 if __name__ == '__main__':
+    # Hilangkan reload=True saat nanti deploy ke VPS agar lebih stabil
     uvicorn.run("app:app", host="127.0.0.1", port=5000, reload=True)
