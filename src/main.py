@@ -21,6 +21,7 @@ import sys
 import cv2
 import csv
 import time
+import threading
 import numpy as np
 import argparse
 import logging
@@ -47,9 +48,8 @@ TRACKER_CONFIG = str(PROJECT_ROOT / "config" / "custom_bytetrack.yaml")
 CLASS_NAMES = {0: "Bis", 1: "Mobil", 2: "Motor", 3: "Truk"}
 CLASS_EMOJIS = {"Bis": "", "Mobil": "", "Motor": "", "Truk": ""}
 
-# Virtual Line - Koordinat default (sesuaikan dengan video Anda)
-LINE_START = sv.Point(x=0, y=300)
-LINE_END = sv.Point(x=640, y=300)
+# Virtual Line kini diinisialisasi secara dinamis menyesuaikan resolusi video.
+# Y-posisi diset sekitar 60% dari tinggi layar.
 
 # Displacement minimal (piksel) untuk mencegah double-count saat macet
 MIN_DISPLACEMENT_PX = 5
@@ -657,13 +657,7 @@ class TrafficMonitorApp:
             flush_interval=100,
         )
 
-        # 4. Directional Counter
-        self.counter = DirectionalCounter(
-            line_start=LINE_START,
-            line_end=LINE_END,
-            class_names=CLASS_NAMES,
-            min_displacement=MIN_DISPLACEMENT_PX,
-        )
+        # 4. Directional Counter akan diinisialisasi setelah resolusi video didapatkan
 
         # 5. Visual HUD
         self.hud = VisualHUD()
@@ -704,8 +698,36 @@ class TrafficMonitorApp:
             return
 
         fps = self.video_source.get_fps()
-        frame_w, frame_h = self.video_source.get_frame_size()
-        logger.info(f"Video: {frame_w}x{frame_h} @ {fps:.1f} FPS")
+        orig_w, orig_h = self.video_source.get_frame_size()
+        
+        # Deteksi otomatis resolusi layar device (Windows)
+        import ctypes
+        try:
+            user32 = ctypes.windll.user32
+            # Mengatasi auto-scaling di Windows agar mendapat resolusi native asli
+            user32.SetProcessDPIAware()
+            screen_w = user32.GetSystemMetrics(0)
+            screen_h = user32.GetSystemMetrics(1)
+        except Exception:
+            screen_w, screen_h = 1920, 1080
+            
+        # Ide Standardisasi Resolusi: Setel resolusi standar sesuai resolusi layar device
+        self.std_w, self.std_h = screen_w, screen_h
+        frame_w, frame_h = self.std_w, self.std_h
+        
+        logger.info(f"Video asli {orig_w}x{orig_h} akan di-resize full screen ke {frame_w}x{frame_h} @ {fps:.1f} FPS")
+
+        # Setup dinamis Directional Counter menyesuaikan frame_w dan frame_h
+        y_pos = int(frame_h * 0.6)  # Mengambil titik di 60% tinggi layar
+        line_start = sv.Point(x=0, y=y_pos)
+        line_end = sv.Point(x=frame_w, y=y_pos)
+        
+        self.counter = DirectionalCounter(
+            line_start=line_start,
+            line_end=line_end,
+            class_names=CLASS_NAMES,
+            min_displacement=MIN_DISPLACEMENT_PX,
+        )
 
         # Setup video writer jika diminta
         if self.args.save_video:
@@ -713,6 +735,11 @@ class TrafficMonitorApp:
             fourcc = cv2.VideoWriter_fourcc(*"mp4v")
             self.video_writer = cv2.VideoWriter(output_path, fourcc, fps, (frame_w, frame_h))
             logger.info(f"Output video: {output_path}")
+
+        # Buat window resizable dan paksa mode fullscreen sejak awal
+        if self.args.show:
+            cv2.namedWindow("Traffic Monitor - Buah Batu", cv2.WINDOW_NORMAL)
+            cv2.setWindowProperty("Traffic Monitor - Buah Batu", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
         try:
             self._processing_loop(fps)
@@ -732,6 +759,9 @@ class TrafficMonitorApp:
             success, frame = self.video_source.read()
             if not success:
                 break
+
+            # Sesuai ide: Resize frame ke resolusi standar agar tampilan selalu konsisten full screen
+            frame = cv2.resize(frame, (self.std_w, self.std_h))
 
             frame_id += 1
 

@@ -32,19 +32,6 @@ DEFAULT_CSV = str(PROJECT_ROOT / "logs" / "traffic_logs_buahbatu.csv")
 # Kelas kendaraan yang dianalisis
 VEHICLE_CLASSES = ["Bis", "Mobil", "Motor", "Truk"]
 
-
-# GROUND TRUTH - Data Hitungan Manual Manusia
-#
-# INSTRUKSI PENGISIAN:
-#   Isi tabel di bawah dengan hitungan manual per interval 5 menit.
-#   Setiap list berisi 12 angka (12 x 5 menit = 60 menit = 1 jam).
-#   
-#   Interval:  [0-5, 5-10, 10-15, 15-20, 20-25, 25-30,
-#               30-35, 35-40, 40-45, 45-50, 50-55, 55-60]
-#
-#   Jika belum ada data, biarkan dengan angka 0.
-#   Ganti angka-angka di bawah dengan hasil hitungan manual Anda.
-#
 GROUND_TRUTH = {
     "Bis":   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     "Mobil": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
