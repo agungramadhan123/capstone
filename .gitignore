@@ -1,0 +1,36 @@
+# ── Python & Environments ──
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env
+
+# ── IDEs & Editor ──
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── YOLO & Deep Learning ──
+runs/
+# File *.pt diizinkan masuk karena ukurannya kecil dan dibutuhkan untuk demo web
+
+# ── Data & Output Logs ──
+logs/
+*.csv
+*.mp4
+*.avi
+*.mkv
+
+# ── Mac/OS specific ──
+.DS_Store
+Thumbs.db
+
+# ── Project Specific (Large Folders) ──
+Data/
+data bubat barat/
+data bubat timur/
+valid/
