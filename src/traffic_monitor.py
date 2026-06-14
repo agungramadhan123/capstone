@@ -31,8 +31,9 @@ class TrafficMonitorApp:
     ROI counter, logger, dan visualisasi.
     """
 
-    def __init__(self, args):
+    def __init__(self, args, frame_callback=None):
         self.args = args
+        self.frame_callback = frame_callback
         self._setup_components()
 
     def _setup_components(self):
@@ -257,6 +258,9 @@ class TrafficMonitorApp:
 
             if self.video_writer:
                 self.video_writer.write(annotated)
+                
+            if hasattr(self, 'frame_callback') and self.frame_callback is not None:
+                self.frame_callback(annotated)
 
             # --- ADAPTIVE SYNC MECHANISM ---
             elapsed_time = time.time() - loop_start
