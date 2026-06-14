@@ -11,17 +11,18 @@ export default function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
-          <h1 className="text-4xl font-bold tracking-tight sm:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">
+          <h1 className="text-4xl font-bold tracking-tight sm:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400 pb-2">
             Smart Traffic Bandung
           </h1>
           <p className="mt-6 text-lg leading-8 text-muted-foreground">
             Platform berbasis Artificial Intelligence untuk mendeteksi, melacak, dan menghitung kendaraan dari CCTV maupun video unggahan guna membantu analisis lalu lintas secara real-time.
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
-            <Button size="lg" className="rounded-full shadow-lg shadow-primary/20">
+            {/* FIX Bug #1: Tambah block: 'start' agar scroll lebih presisi ke target section */}
+            <Button size="lg" className="rounded-full shadow-lg shadow-primary/20" onClick={() => document.getElementById('input')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
               Mulai Monitoring <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
-            <Button variant="outline" size="lg" className="rounded-full">
+            <Button variant="outline" size="lg" className="rounded-full" onClick={() => document.getElementById('analytics')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
               Pelajari AI <Video className="ml-2 h-4 w-4" />
             </Button>
           </div>

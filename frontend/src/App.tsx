@@ -11,8 +11,9 @@ import TrafficStatus from './components/TrafficStatus'
 import MapMonitoring from './components/MapMonitoring'
 import TrafficAnalytics from './components/TrafficAnalytics'
 import InsightAI from './components/InsightAI'
-import TrafficAssistant from './components/TrafficAssistant'
-import UploadHistorySection from './components/UploadHistorySection'
+// Fitur di bawah ini disembunyikan sementara untuk pengembangan berikutnya
+// import TrafficAssistant from './components/TrafficAssistant'
+// import UploadHistorySection from './components/UploadHistorySection'
 
 function App() {
   const scrollTo = (id: string) => {
@@ -34,7 +35,8 @@ function App() {
             <button onClick={() => scrollTo('monitor')} className="hover:text-foreground transition-colors flex items-center gap-2"><Video size={16}/> Monitor</button>
             <button onClick={() => scrollTo('map')} className="hover:text-foreground transition-colors flex items-center gap-2"><Map size={16}/> Map</button>
             <button onClick={() => scrollTo('analytics')} className="hover:text-foreground transition-colors flex items-center gap-2"><LayoutDashboard size={16}/> Analytics</button>
-            <button onClick={() => scrollTo('assistant')} className="hover:text-foreground transition-colors flex items-center gap-2"><MessageSquare size={16}/> AI Assistant</button>
+            {/* Fitur Chatbot disembunyikan sementara */}
+            {/* <button onClick={() => scrollTo('assistant')} className="hover:text-foreground transition-colors flex items-center gap-2"><MessageSquare size={16}/> AI Assistant</button> */}
           </div>
         </div>
       </nav>
@@ -77,15 +79,15 @@ function App() {
           </div>
         </div>
 
-        {/* Section 8: Traffic Assistant */}
-        <section id="assistant">
+        {/* Section 8: Traffic Assistant (Disembunyikan sementara untuk pengembangan berikutnya) */}
+        {/* <section id="assistant">
           <TrafficAssistant />
-        </section>
+        </section> */}
 
-        {/* Section 9: Upload History */}
-        <section id="history">
+        {/* Section 9: Upload History (Disembunyikan sementara untuk pengembangan berikutnya) */}
+        {/* <section id="history">
           <UploadHistorySection />
-        </section>
+        </section> */}
 
       </main>
 

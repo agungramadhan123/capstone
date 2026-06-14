@@ -34,7 +34,12 @@ class TrafficMonitorApp:
     def __init__(self, args, frame_callback=None):
         self.args = args
         self.frame_callback = frame_callback
+        self.is_running = True
         self._setup_components()
+
+    def stop(self):
+        """Hentikan pemrosesan loop."""
+        self.is_running = False
 
     def _setup_components(self):
         """Inisialisasi seluruh komponen."""
@@ -108,26 +113,14 @@ class TrafficMonitorApp:
         fps = self.video_source.get_fps()
         orig_w, orig_h = self.video_source.get_frame_size()
 
-        # Deteksi otomatis resolusi layar device (Windows)
-        import ctypes
-        try:
-            user32 = ctypes.windll.user32
-            # Mengatasi auto-scaling di Windows agar mendapat resolusi native asli
-            user32.SetProcessDPIAware()
-            screen_w = user32.GetSystemMetrics(0)
-            screen_h = user32.GetSystemMetrics(1)
-        except Exception:
-            screen_w, screen_h = 1920, 1080
-
-        # Ide Standardisasi Resolusi: Setel resolusi standar sesuai resolusi layar device
-        self.std_w, self.std_h = screen_w, screen_h
+        # Ide Standardisasi Resolusi: Setel resolusi standar sesuai dengan resolusi asli CCTV
+        self.std_w, self.std_h = orig_w, orig_h
         frame_w, frame_h = self.std_w, self.std_h
 
         logger.info(
-            f"Video asli {orig_w}x{orig_h} akan di-resize full screen "
-            f"ke {frame_w}x{frame_h} @ {fps:.1f} FPS"
+            f"Video asli {orig_w}x{orig_h} akan ditampilkan sesuai resolusi CCTV "
+            f"yaitu {frame_w}x{frame_h} @ {fps:.1f} FPS"
         )
-
         # ── Setup ROI Counter ─────────────────────────────────────────────
         logger.info("Menginisialisasi Dynamic Single Polygon Counter")
 
@@ -146,13 +139,9 @@ class TrafficMonitorApp:
             )
             logger.info(f"Output video: {output_path}")
 
-        # Buat window resizable dan paksa mode fullscreen sejak awal
+        # Buat window resizable (tanpa paksa fullscreen agar sesuai resolusi asli)
         if self.args.show:
             cv2.namedWindow("Traffic Monitor - Buah Batu", cv2.WINDOW_NORMAL)
-            cv2.setWindowProperty(
-                "Traffic Monitor - Buah Batu",
-                cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN
-            )
 
         try:
             self._processing_loop(fps)
@@ -176,7 +165,7 @@ class TrafficMonitorApp:
             f"(Waktu per frame: {time_per_frame:.3f}s)"
         )
 
-        while True:
+        while self.is_running:
             loop_start = time.time()
 
             # Baca frame

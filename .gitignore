@@ -8,29 +8,39 @@ env/
 venv/
 .env
 
-# ── IDEs & Editor ──
+# ── Frontend (Node.js & React) ──
+node_modules/
+dist/
+dist-ssr/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── IDEs & OS Files ──
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.sln
 *.swp
 *.swo
 
 # ── YOLO & Deep Learning ──
 runs/
-# File *.pt diizinkan masuk karena ukurannya kecil dan dibutuhkan untuk demo web
+# Catatan: File model (.pt) tidak di-ignore karena dibutuhkan teman untuk langsung menjalankan web tanpa harus training ulang.
 
-# ── Data & Output Logs ──
+# ── Data & Output Logs (Ukuran Besar) ──
 logs/
 *.csv
 *.mp4
 *.avi
 *.mkv
 
-# ── Mac/OS specific ──
-.DS_Store
-Thumbs.db
-
-# ── Project Specific (Large Folders) ──
+# ── Folder Dataset Spesifik Proyek ──
 Data/
 data bubat barat/
 data bubat timur/
+dataset_preprocessing/
 valid/

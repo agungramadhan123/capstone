@@ -25,12 +25,12 @@ class ROICounter:
         self.frame_w, self.frame_h = frame_size
         
         # 1. Tentukan ukuran dasar (Garis Poligon Membentang Ujung ke Ujung)
-        # Diposisikan 80% dari atas (sehingga dekat dengan frame bawah)
-        center_y = int(self.frame_h * 0.65)
+        # Diposisikan tepat di tengah layar (dibagi 2)
+        center_y = int(self.frame_h / 2)
         
-        # Poligon dibuat dengan jarak (margin) dari tepi kiri dan kanan agar tidak menabrak UI
-        margin_x = int(self.frame_w * 0.15)  # Margin 15% di kiri dan kanan
-        setengah_tinggi = 30 
+        # Poligon dibuat membentang dari ujung kiri hingga ujung kanan (tanpa margin)
+        margin_x = 0  # 0% margin kiri dan kanan
+        setengah_tinggi = 20 
         
         p1 = [margin_x, center_y - setengah_tinggi]                             # Kiri Atas
         p2 = [self.frame_w - margin_x, center_y - setengah_tinggi]              # Kanan Atas
@@ -61,7 +61,7 @@ class ROICounter:
         """Tentukan posisi relatif anchor terhadap kotak trapesium."""
         cx, cy = anchor
         center_x = self.frame_w // 2
-        center_y = int(self.frame_h * 0.8)
+        center_y = int(self.frame_h / 2)  # Disesuaikan dengan posisi polygon baru
         
         dx = cx - center_x
         dy = cy - center_y

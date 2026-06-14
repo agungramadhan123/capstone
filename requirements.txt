@@ -1,0 +1,15 @@
+# Backend Framework
+fastapi
+uvicorn
+python-multipart
+pydantic
+
+# Computer Vision & AI
+opencv-python
+ultralytics
+supervision
+
+# Data Processing
+pandas
+numpy
+PyYAML
