@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ── Python & Environments ──
 __pycache__/
 *.py[cod]
@@ -44,3 +45,9 @@ data bubat barat/
 data bubat timur/
 dataset_preprocessing/
 valid/
+=======
+venv/
+__pycache__/
+*.pyc
+.env
+>>>>>>> origin/main
